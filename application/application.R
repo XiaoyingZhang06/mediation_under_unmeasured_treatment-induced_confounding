@@ -14,51 +14,51 @@ library(foreach)
 time_start <- Sys.time()
 
 ########## data process ##########
-rand <- read_dta(
-  "randhrs1992_2020v2.dta",
-  col_select = c("hhid", "pn", "r15agey_e", "ragender", "raracem", "r15shlt", "raedegrm",
-                 "rameduc", "rafeduc", "h15atotb", "h15atotn", "r15mstath", "r15lbsatwlf"))
-rand2020 <- rand %>%
-  filter(!is.na(r15agey_e)) %>%
-  rename(HHID = hhid, PN = pn) # n = 15723
-lb_data <- read_dta(
-  "H20LB_R.dta",
-  col_select = c("HHID", "PN",
-                 "RLBELIG", "RLB029A", "RLB029B", "RLB029C", "RLB029D", "RLB029E", "RLB029F"))
-lb_data <- lb_data %>%
-  filter(RLBELIG==1) %>% # n = 7444
-  rowwise() %>%
-  mutate(discrim = mean(c(RLB029A,RLB029B,RLB029C,RLB029D,RLB029E,RLB029F), na.rm = TRUE)) %>%
-  filter(!is.na(discrim)) %>% # n = 4626
-  dplyr::select(HHID, PN, discrim)
-merge_data <- left_join(lb_data,rand2020,by=c("HHID","PN"))
-merge_data <- merge_data %>%
-  dplyr::select(-c(1, 2)) %>%
-  rename(
-    age = r15agey_e,
-    gender = ragender,
-    race = raracem,
-    marital = r15mstath,
-    medu = rameduc,
-    fedu = rafeduc,
-    degree = raedegrm,
-    health = r15shlt,
-    networth = h15atotb,
-    nonhousing = h15atotn,
-    wellbeing = r15lbsatwlf
-  )  %>%
-  filter(race!=3) %>%
-  filter(age>=50) %>%
-  filter(!is.na(wellbeing)) # n = 4090
-summary(merge_data)
-merge_data <- zap_labels(merge_data)
-merge_data$gender<-ifelse(merge_data$gender==2,0,1)
-merge_data$marital<-ifelse(merge_data$marital<=2,0,1)
-merge_data$race<-ifelse(merge_data$race==1,0,1)
-imp_data <- mice(merge_data, method = "rf", m = 5, printFlag = FALSE)
-merge_data<-complete(imp_data)
-summary(merge_data)
-saveRDS(merge_data, "wellbeing_data.rds")
+# rand <- read_dta(
+#   "randhrs1992_2020v2.dta",
+#   col_select = c("hhid", "pn", "r15agey_e", "ragender", "raracem", "r15shlt", "raedegrm",
+#                  "rameduc", "rafeduc", "h15atotb", "h15atotn", "r15mstath", "r15lbsatwlf"))
+# rand2020 <- rand %>%
+#   filter(!is.na(r15agey_e)) %>%
+#   rename(HHID = hhid, PN = pn) # n = 15723
+# lb_data <- read_dta(
+#   "H20LB_R.dta",
+#   col_select = c("HHID", "PN",
+#                  "RLBELIG", "RLB029A", "RLB029B", "RLB029C", "RLB029D", "RLB029E", "RLB029F"))
+# lb_data <- lb_data %>%
+#   filter(RLBELIG==1) %>% # n = 7444
+#   rowwise() %>%
+#   mutate(discrim = mean(c(RLB029A,RLB029B,RLB029C,RLB029D,RLB029E,RLB029F), na.rm = TRUE)) %>%
+#   filter(!is.na(discrim)) %>% # n = 4626
+#   dplyr::select(HHID, PN, discrim)
+# merge_data <- left_join(lb_data,rand2020,by=c("HHID","PN"))
+# merge_data <- merge_data %>%
+#   dplyr::select(-c(1, 2)) %>%
+#   rename(
+#     age = r15agey_e,
+#     gender = ragender,
+#     race = raracem,
+#     marital = r15mstath,
+#     medu = rameduc,
+#     fedu = rafeduc,
+#     degree = raedegrm,
+#     health = r15shlt,
+#     networth = h15atotb,
+#     nonhousing = h15atotn,
+#     wellbeing = r15lbsatwlf
+#   )  %>%
+#   filter(race!=3) %>%
+#   filter(age>=50) %>%
+#   filter(!is.na(wellbeing)) # n = 4090
+# summary(merge_data)
+# merge_data <- zap_labels(merge_data)
+# merge_data$gender<-ifelse(merge_data$gender==2,0,1)
+# merge_data$marital<-ifelse(merge_data$marital<=2,0,1)
+# merge_data$race<-ifelse(merge_data$race==1,0,1)
+# imp_data <- mice(merge_data, method = "rf", m = 5, printFlag = FALSE)
+# merge_data<-complete(imp_data)
+# summary(merge_data)
+# saveRDS(merge_data, "wellbeing_data.rds")
 
 appdata <- readRDS("wellbeing_data.rds")
 appdata$discrim<-ifelse(appdata$discrim>5,0,1)
